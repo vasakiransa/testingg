@@ -1,24 +1,24 @@
 import 'dart:async';
-import 'package:cng/detailed_screen.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'detailed_screen.dart';  // Replace with actual path if needed
 
 class OtpScreen extends StatefulWidget {
-  final String text;
+  final String text; // User's phone number
+  final String verificationId; // Firebase verification ID
 
-  // receive data from the FirstScreen as a parameter
-  OtpScreen({Key? key, required this.text}) : super(key: key);
+  OtpScreen({Key? key, required this.text, required this.verificationId})
+      : super(key: key);
+
   @override
   _OtpScreenState createState() => _OtpScreenState();
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  Timer? _timer;
-  int _start = 30;
-
   final TextEditingController _otpController1 = TextEditingController();
   final TextEditingController _otpController2 = TextEditingController();
   final TextEditingController _otpController3 = TextEditingController();
@@ -28,6 +28,11 @@ class _OtpScreenState extends State<OtpScreen> {
   final FocusNode _focusNode2 = FocusNode();
   final FocusNode _focusNode3 = FocusNode();
   final FocusNode _focusNode4 = FocusNode();
+
+  Timer? _timer;
+  int _start = 30;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
@@ -54,9 +59,14 @@ class _OtpScreenState extends State<OtpScreen> {
     _focusNode2.dispose();
     _focusNode3.dispose();
     _focusNode4.dispose();
+    _otpController1.dispose();
+    _otpController2.dispose();
+    _otpController3.dispose();
+    _otpController4.dispose();
     super.dispose();
   }
 
+  // Navigate focus to next text field
   void _onOtpChanged(String value, int index) {
     if (value.isEmpty) {
       switch (index) {
@@ -70,7 +80,7 @@ class _OtpScreenState extends State<OtpScreen> {
           _focusNode3.requestFocus();
           break;
         case 0:
-          _focusNode1.unfocus(); // Optionally dismiss the keyboard here
+          _focusNode1.unfocus();
           break;
       }
     } else if (value.length == 1) {
@@ -85,9 +95,41 @@ class _OtpScreenState extends State<OtpScreen> {
           _focusNode4.requestFocus();
           break;
         case 3:
-          _focusNode4.unfocus(); // Optionally dismiss the keyboard here
+          _focusNode4.unfocus();
           break;
       }
+    }
+  }
+
+  // Verify OTP and navigate to next screen if valid
+  void _verifyOTP(BuildContext context) async {
+    String smsCode = _otpController1.text +
+        _otpController2.text +
+        _otpController3.text +
+        _otpController4.text;
+
+    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+      verificationId: widget.verificationId,
+      smsCode: smsCode,
+    );
+
+    try {
+      UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        // Navigate to the next screen after successful OTP verification
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => detailed_screen()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invalid OTP'),
+        ),
+      );
     }
   }
 
@@ -120,7 +162,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       Padding(
                         padding: const EdgeInsets.only(left: 10),
                         child: Text(
-                          'FuelFlux',
+                          'FuelConnect',
                           style: GoogleFonts.getFont(
                             'Poppins',
                             fontWeight: FontWeight.w500,
@@ -182,92 +224,16 @@ class _OtpScreenState extends State<OtpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Container(
-                        margin: EdgeInsets.fromLTRB(0, 0, 37, 0),
-                        decoration: BoxDecoration(
-                          // border: Border.all(color: Color(0xFFFFC097)),
-                          borderRadius: BorderRadius.circular(9),
-                          color: Color(0xFFF4F4F4),
-                        ),
-                        child: TextField(
-                          controller: _otpController1,
-                          focusNode: _focusNode1,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            counterText: '',
-                          ),
-                          onChanged: (value) => _onOtpChanged(value, 0),
-                        ),
-                      ),
+                      child: _buildOtpTextField(_otpController1, _focusNode1, 0),
                     ),
                     Expanded(
-                      child: Container(
-                        margin: EdgeInsets.fromLTRB(0, 0, 37, 0),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Color(0xFFEDEEF0)),
-                          borderRadius: BorderRadius.circular(9),
-                          color: Color(0xFFF4F4F4),
-                        ),
-                        child: TextField(
-                          controller: _otpController2,
-                          focusNode: _focusNode2,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            counterText: '',
-                          ),
-                          onChanged: (value) => _onOtpChanged(value, 1),
-                        ),
-                      ),
+                      child: _buildOtpTextField(_otpController2, _focusNode2, 1),
                     ),
                     Expanded(
-                      child: Container(
-                        margin: EdgeInsets.fromLTRB(0, 0, 37, 0),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Color(0xFFEDEEF0)),
-                          borderRadius: BorderRadius.circular(9),
-                          color: Color(0xFFF4F4F4),
-                        ),
-                        child: TextField(
-                          controller: _otpController3,
-                          focusNode: _focusNode3,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            counterText: '',
-                          ),
-                          onChanged: (value) => _onOtpChanged(value, 2),
-                        ),
-                      ),
+                      child: _buildOtpTextField(_otpController3, _focusNode3, 2),
                     ),
                     Expanded(
-                      child: Container(
-                        margin: EdgeInsets.fromLTRB(0, 0, 37, 0),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Color(0xFFEDEEF0)),
-                          borderRadius: BorderRadius.circular(9),
-                          color: Color(0xFFF4F4F4),
-                        ),
-                        child: TextField(
-                          controller: _otpController4,
-                          focusNode: _focusNode4,
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            counterText: '',
-                          ),
-                          onChanged: (value) => _onOtpChanged(value, 3),
-                        ),
-                      ),
+                      child: _buildOtpTextField(_otpController4, _focusNode4, 3),
                     ),
                   ],
                 ),
@@ -281,48 +247,33 @@ class _OtpScreenState extends State<OtpScreen> {
                       _otpController2.text.isEmpty ||
                       _otpController3.text.isEmpty ||
                       _otpController4.text.isEmpty) {
-                    // Show an alert or a snackbar indicating that all fields must be filled
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Please enter the OTP'),
                       ),
                     );
                   } else {
-                    // All fields are filled, navigate to the next screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            detailed_screen(), // Replace with your new screen widget
-                      ),
-                    );
+                    _verifyOTP(context);
                   }
                 },
                 child: Container(
                   width: double.infinity,
                   height: 59,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFE47B37),
-                      borderRadius: BorderRadius.circular(29.5),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          child: Text(
-                            'Verify',
-                            style: GoogleFonts.getFont(
-                              'Poppins',
-                              fontWeight: FontWeight.w500,
-                              fontSize: 20,
-                              height: 1.2,
-                              letterSpacing: -0.2,
-                              color: Color(0xFFFFFFFF),
-                            ),
-                          ),
-                        ),
-                      ],
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE47B37),
+                    borderRadius: BorderRadius.circular(29.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Verify',
+                      style: GoogleFonts.getFont(
+                        'Poppins',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 20,
+                        height: 1.2,
+                        letterSpacing: -0.2,
+                        color: Color(0xFFFFFFFF),
+                      ),
                     ),
                   ),
                 ),
@@ -333,35 +284,26 @@ class _OtpScreenState extends State<OtpScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Positioned(
-                    top: 290,
-                    left: 30,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Resend OTP in ',
-                          style: GoogleFonts.getFont(
-                            'Poppins',
-                            fontWeight: FontWeight.w400,
-                            fontSize: 15,
-                            height: 1.2,
-                            letterSpacing: 0.4,
-                            color: Color(0xFF000000),
-                          ),
-                        ),
-                        Text(
-                          '00:${_start.toString().padLeft(2, '0')}',
-                          style: GoogleFonts.getFont(
-                            'Poppins',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 15,
-                            height: 1.2,
-                            letterSpacing: 0.4,
-                            color: Color(0xFF000000),
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'Resend OTP in ',
+                    style: GoogleFonts.getFont(
+                      'Poppins',
+                      fontWeight: FontWeight.w400,
+                      fontSize: 15,
+                      height: 1.2,
+                      letterSpacing: 0.4,
+                      color: Color(0xFF000000),
+                    ),
+                  ),
+                  Text(
+                    '00:${_start.toString().padLeft(2, '0')}',
+                    style: GoogleFonts.getFont(
+                      'Poppins',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                      height: 1.2,
+                      letterSpacing: 0.4,
+                      color: Color(0xFF000000),
                     ),
                   ),
                 ],
@@ -369,6 +311,33 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Build OTP text field
+  Widget _buildOtpTextField(TextEditingController controller, FocusNode focusNode, int index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        maxLength: 1,
+        decoration: InputDecoration(
+          counterText: '',
+          contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: Colors.black,
+            ),
+          ),
+        ),
+        onChanged: (value) {
+          _onOtpChanged(value, index);
+        },
       ),
     );
   }
