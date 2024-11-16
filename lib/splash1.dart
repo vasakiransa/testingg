@@ -56,15 +56,15 @@ class _SplashState1 extends State<Splash1> {
           // Automatically sign in the user after OTP verification
           await _auth.signInWithCredential(credential);
           // Navigate to OTP screen or the next screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OtpScreen(
-                text: phoneNumber,
-                verificationId: _verificationId, // Pass the verificationId here
-              ),
-            ),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => OtpScreen(
+          //       text: phoneNumber,
+          //       verificationId: _verificationId, // Pass the verificationId here
+          //     ),
+          //   ),
+          // );
         },
         verificationFailed: (FirebaseAuthException e) {
           // Handle error when verification fails
